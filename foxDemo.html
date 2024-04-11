@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head><title>fox API</title>
+    <link rel="shortcut icon" href="./img/OpenSea.png" />
+    <script src="https://unpkg.com/@metamask/detect-provider/dist/detect-provider.min.js"></script>
+    
+    <script type="text/javascript">
+        //连接小狐狸，不是打开小狐狸界面。 获得钱包地址
+        async function fconnect(){
+            if(typeof window.ethereum !== 'undefined'){
+                document.getElementById('idconnect').innerHTML = "小狐狸已安装";
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                document.getElementById('idaddress').innerHTML = accounts[0];
+                document.getElementById('idfrom').value = accounts[0];
+            }else{
+                document.getElementById('idconnect').innerHTML = "未找到小狐狸";
+            }
+
+        }
+
+        //查看provider
+        async function fstart(){
+            const ethProvider = await detectEthereumProvider();
+            if(ethProvider){
+                //startApp(ethProvider);  小狐狸官方文档里有startApp()，但是无法运行。
+                document.getElementById('idprovider').innerHTML = "provider start";
+                /*
+                if (ethProvider !== window.ethereum) {
+                    alert('Do you have metamask?');
+                }else{
+                    alert("hava metamask, can not start")
+                }
+                */
+            }else{
+                document.getElementById('idprovider').innerHTML = "NO provider";
+            }
+        }
+        
+        //检测是否安装了MetaMask
+        async function fisMetaMask(){
+            if(ethereum.isMetaMask == true){
+                document.getElementById('idisMetaMask').innerHTML = "已安装MetaMask";
+            }else{
+                document.getElementById('idisMetaMask').innerHTML = "未安装MetaMask";
+            }
+        }
+
+        //检测是否连接到Provider
+        async function fisConnected(){
+            if(ethereum.isConnected() == true){
+                document.getElementById('idisConnected').innerHTML = "已连接Provider";
+            }else{
+                document.getElementById('idisConnected').innerHTML = "未连接Provider";
+            }
+        }
+
+        //测试发送交易
+        async function fsendTransaction(){
+            //alert('test send transaction');
+            
+            let mfrom = document.getElementById('idfrom').value;
+            let mto = document.getElementById('idto').value;
+            let mgas = document.getElementById('idgas').value;
+            let mgasPrice = document.getElementById('idgasPrice').value;
+            let mvalue = document.getElementById('idvalue').value;
+            let mdata = document.getElementById('iddata').value;
+            //alert(mfrom+'+'+mto+'+'+mgas+'+'+mgasPrice+'+'+mvalue+'+'+mdata);
+
+            let params = [
+                {
+                    from:mfrom,
+                    to:mto,
+                    gas:mgas,
+                    gasPrice:mgasPrice,
+                    value:mvalue,
+                    data:mdata,
+
+                },
+            ];
+
+            ethereum.request({method:'eth_sendTransaction',params})
+            .then((result)=>{
+                document.getElementById('idreturn').value = result;
+
+            })
+            .catch((error)=>{
+                alert("message:"+error.message+"\ncode:"+error.code+"\ndata:"+error.data);
+            });
+
+
+            //测试自动点击确认按键（不成功）  无法获得确认按键对象
+            /*
+            setTimeout(() => {
+                alert("in setTimeout()");
+                alert(mtestButton.innerHTML);
+            }, (10000));
+
+            alert('test auto click button');
+            let mtestButton = document.getElementsByClassName('button btn--rounded btn-primary page-container__footer-button');
+            alert(mtestButton.innerHTML);
+            */
+            /*
+            Provider Errors
+            Status  code Name	            Description
+            4001	User Rejected Request	The user rejected the request.
+            4100	Unauthorized	        The requested method and/or account has not been authorized by the user.
+            4200	Unsupported Method	    The Provider does not support the requested method.
+            4900	Disconnected	        The Provider is disconnected from all chains.
+            4901	Chain Disconnected	    The Provider is not connected to the requested chain.
+
+            Error codes    If an Ethereum RPC method encounters an error
+            Code	Message	Meaning	Category
+            -32700	Parse error	Invalid JSON	standard
+            -32600	Invalid request	JSON is not a valid request object	standard
+            -32601	Method not found	Method does not exist	standard
+            -32602	Invalid params	Invalid method parameters	standard
+            -32603	Internal error	Internal JSON-RPC error	standard
+            -32000	Invalid input	Missing or invalid parameters	non-standard
+            -32001	Resource not found	Requested resource not found	non-standard
+            -32002	Resource unavailable	Requested resource not available	non-standard
+            -32003	Transaction rejected	Transaction creation failed	non-standard
+            -32004	Method not supported	Method is not implemented	non-standard
+            -32005	Limit exceeded	Request exceeds defined limit	non-standard
+            -32006	JSON-RPC version not supported	Version of JSON-RPC protocol is not supported	non-standard
+            */
+        }
+
+        //获得链名chainId
+        async function fgetChainId(){
+            let mchainId = await ethereum.request({method:'eth_chainId'});
+            let mchainName = "";
+            switch(mchainId){
+                case "0x1":
+                    mchainName = "Ethereum Main Network (Mainnet)";
+                    break;
+                case "0x3":
+                    mchainName = "Ropsten Test Network";
+                    break;
+                case "0x4":
+                    mchainName = "Rinkeby Test Network";
+                    break;
+                case "0x5":
+                    mchainName = "Goerli Test Network";
+                    break;
+                case "0x2a":
+                    mchainName = "Kovan Test Network";
+                    break;
+                default:
+                    mchainName = "unknow Network";
+                    break;
+                
+            }
+            document.getElementById('idchainId').innerHTML = "链代码："+mchainId+"&nbsp;&nbsp;&nbsp;&nbsp;链名："+mchainName;
+
+        }
+
+        //检测是否锁定
+        async function fisUnlocked(){
+            let misUnlocked = await ethereum._metamask.isUnlocked();
+            if(misUnlocked == true){
+                document.getElementById('idisUnlocked').innerHTML = "已解锁";
+            }else{
+                document.getElementById('idisUnlocked').innerHTML = "锁定";
+            }
+            
+        }
+        
+        //换链
+        async function fswitchChain(){
+            let mchainID = document.getElementById('idselectChain').value.split(' ')[0];
+            
+            await ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: mchainID }],
+            }).then((result)=>{
+                if(result == null){
+                    fgetChainId();
+                }
+            })
+            .cathc((err)=>{alert("err"+err)});       
+        }
+
+
+    </script>
+
+</head>
+<body>
+    <p style="text-align: center;">
+    <img src="img/fox.jpg" alt="Fox here" />
+</p>
+
+<p style="text-align: center;">
+    <button type="submit" onclick="fconnect()" style="width: 150px; height: 50px;" id="idconnect">连接钱包</button>
+</p>
+
+<table style="margin: auto;">
+    <tr>
+        <td>钱包地址：</td>
+        <td></td>
+        <td id="idaddress">未获得钱包地址</td>
+    </tr>
+    <tr>
+        <td>查看Provider(未实现):</td>
+        <td><button type="button" onclick="fstart()">查看</button></td>
+        <td id="idprovider"> </td>
+    </tr>
+    <tr>
+        <td>检测isMetaMask:</td>
+        <td><button type="button" onclick="fisMetaMask()">检测</button></td>
+        <td id="idisMetaMask"></td>
+    </tr>
+    <tr>
+        <td>是否连接到Provider:</td>
+        <td><button type="button" onclick="fisConnected()">检测</button></td>
+        <td id="idisConnected"></td>
+    </tr>
+    <tr>
+        <td>链名：</td>
+        <td><button type="button" onclick="fgetChainId()">检测</button></td>
+        <td id="idchainId"></td>
+    </tr>
+    <tr>
+        <td>是否锁定：</td>
+        <td><button type="button" onclick="fisUnlocked()">检测</button></td>
+        <td id="idisUnlocked"></td>
+    </tr>
+</table>
+<br>
+<p style="text-align: center">交易测试</p>
+<table style="margin: auto;">
+    <tr>
+        <td>From:</td>
+        <td><input type="text" id="idfrom" style="width: 400px; height: 30px;" value="0x1f79DA5Ced85c7F480f293FdbC7aa67A6cE6a67a"></td>
+    </tr>
+    <tr>
+        <td>To:</td>
+        <td><input type="text" id="idto" style="width: 400px; height: 30px;" value="0x3C4E9f229813Ba5030636D09496561E8779187a1"></td>
+    </tr>
+    <tr>
+        <td>Gas:</td>
+        <td><input type="text" id="idgas" style="width: 400px; height: 30px;" value="0x76c0">
+        </td>
+    </tr>
+    <tr>
+        <td>GasPrice:</td>
+        <td><input type="text" id="idgasPrice" style="width: 400px; height: 30px;" value="0x9184e72a000">
+        </td>
+    </tr>
+    <tr>
+        <td>Value:</td>
+        <td><input type="text" id="idvalue" style="width: 400px; height: 30px;" value="0x56BC75E2F4B580">
+        </td>
+    </tr>
+    <tr>
+        <td>Data:</td>
+        <td><input type="text" id="iddata" style="width: 400px; height: 30px;" value="0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675">
+        </td>
+    </tr>
+    <tr>
+        <td><button type="button" onclick="fsendTransaction()">发送交易</button></td>
+        <td><input type="text" id="idreturn" value="返回交易结果" style="width: 400px; height: 30px;"></td>
+    </tr>
+    </table>
+    <br><br>
+<table style="margin: auto;">
+    <tr>
+        <td>
+            <select id="idselectChain" style="width: 400px; height: 30px;">
+                <option>0x1 &nbsp;&nbsp;&nbsp;&nbsp;Ethereum Main Network (Mainnet)</option>
+                <option>0x3 &nbsp;&nbsp;&nbsp;&nbsp;Ropsten Test Network</option>
+                <option>0x4 &nbsp;&nbsp;&nbsp;&nbsp;Rinkeby Test Network</option>
+                <option>0x5 &nbsp;&nbsp;&nbsp;&nbsp;Goerli Test Network</option>
+                <option>0x2a &nbsp;&nbsp;&nbsp;&nbsp;Kovan Test Network</option>
+                <option>0x13881 &nbsp;&nbsp;&nbsp;&nbsp;Mumbai Test Network</option>  
+                <option>0xa &nbsp;&nbsp;&nbsp;&nbsp;Optimism Mainnet(测试未添加的网络)</option>
+            </select>
+        </td>
+        <td><button type="button" onclick="fswitchChain()" style="width: 80px; height: 30px;">换 链</button></td>
+        <td id="idswitchChain"></td>
+    </tr>
+</table>
+
+</body>
+</html>
